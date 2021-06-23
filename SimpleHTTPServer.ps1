@@ -66,7 +66,7 @@ try{
             }
             #End valid request flag
     
-            #If valid request, return response of data from powershell's Get-Content
+            #If valid request, return response of data from StreamReader
             if ($valid_req -eq $true)
             {
                 write-host $([string]$get_resource) is a valid resource. -BackgroundColor Yellow -ForegroundColor Red;
