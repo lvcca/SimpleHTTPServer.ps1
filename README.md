@@ -1,5 +1,5 @@
-# SimpleHTTPServer.ps1
 <h1>SimpleHTTPServer.ps1</h1>
+
 <p1>A simple HTTP Server written in Powershell</p1>
 
 <b>This script only works on local host</b>
