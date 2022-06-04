@@ -1,18 +1,15 @@
-﻿# Author: Mason Palma
+# Author: Mason Palma
 # Date: 22JUN2021
 # Purpose: To provide a SimpleHTTPServer in Powershell
 # Credits: Much of this code was taken from Microsoft's C# documentation then translated to powershell
 
 $listener = [System.Net.HttpListener]::new();
-$current_dir = Get-Location;
+$current_dir = $(Get-Location).Path;
 $port = 8000;
 $prefix = "http://" + $current_dir  + ":" + $port + "`/";
 
-$listener.Prefixes.add("http://localhost:$($port)/");
+$listener.Prefixes.add("http://127.0.0.1:$($port)/");
 $outward_ip = Get-NetIPAddress -AddressFamily IPv4
-
-#needs firewall exception netsh or port binding to reach external client
-#foreach ($ip in $outward_ip){$listener.Prefixes.Add("http://" + [string]$($ip.IPAddress) + ":8000/")}
 
 #create prefixes for each file in directory, this allows each file in directory to be gettable from uri
 foreach($file in $files){$listener.Prefixes.Add("http://localhost:$($port)" + "`/" + [string]$file + "`/");}
@@ -51,6 +48,10 @@ try{
             #Debug statements to verify resource GET
             write-host "Full URL : " $([string]$request.Url);
             write-host "Resource : " $([string]$request.RawUrl);
+            
+            write-host $request.LocalEndPoint
+            write-host $request.RemoteEndPoint
+
             #Translate URI get to Dir Format
             [string]$get_resource = [string]$request.RawUrl -replace "/","";
     
@@ -76,8 +77,9 @@ try{
                 [System.Net.HttpListenerContext]$context1 = [System.Net.HttpListenerContext]$context;
                 [System.Net.HttpListenerRequest]$request1 = $context1.Request;
                 [System.Net.HttpListenerResponse]$response1 = $context1.Response;
-        
-                $buffer1 = [System.Text.Encoding]::UTF8.GetBytes($([System.IO.StreamReader]::new($get_resource).ReadToEnd()));
+                
+                $full_path = $current_dir + '\' + $get_resource
+                $buffer1 = [System.Text.Encoding]::UTF8.GetBytes($([System.IO.StreamReader]::new($full_path).ReadToEnd()));
                 $response1.ContentLength64 = [System.Int64]$buffer1.Length
                 [System.IO.Stream]$output1 = $response1.OutputStream;
                 $output1.Write($buffer1, 0, [System.Int64]$buffer1.Length);
@@ -100,7 +102,10 @@ try{
 }
 
 catch [System.Exception]{
-    Write-host "[*] Error : " + $($Error.GetType().fullname) + "`n" + $Error;
+    
+    Write-Error ($_.Exception | Format-List -Force | Out-String) -ErrorAction Continue
+    Write-Error ($_.InvocationInfo | Format-List -Force | Out-String) -ErrorAction Continue
+
     $output.Close();
     $listener.Stop();
 }
