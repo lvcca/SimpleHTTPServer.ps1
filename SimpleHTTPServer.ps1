@@ -12,7 +12,7 @@ $listener.Prefixes.add("http://127.0.0.1:$($port)/");
 $outward_ip = Get-NetIPAddress -AddressFamily IPv4
 
 #create prefixes for each file in directory, this allows each file in directory to be gettable from uri
-foreach($file in $files){$listener.Prefixes.Add("http://localhost:$($port)" + "`/" + [string]$file + "`/");}
+foreach($file in $files){$listener.Prefixes.Add("http://localhost:$($port)" + "`/" + [string]$file);}
 
 #Start listener; console write out
 $listener.Start();
@@ -22,7 +22,7 @@ try{
 
     while ($listener.IsListening)
     {
-
+        
         [System.Net.HttpListenerContext]$context = $listener.GetContext();
         [System.Net.HttpListenerRequest]$request = $context.Request;
         [System.Net.HttpListenerResponse]$response = $context.Response;
@@ -31,11 +31,11 @@ try{
 
         $files = Get-ChildItem $current_dir;
 
-        [string]$response_text = "<HTML><BODY><h1>$($current_dir)</h1>
+        [string]$response_text = "<!DOCTYPE html><title>$($current_dir)</title><BODY><h1>$($current_dir)</h1>
         $(foreach ($file in $files)
         {
         "<li>
-            <a href=`'$([string]$file + "`\" + "`'") download=$([string]$file + "`\" + "`'")>$([string]$file)</a>
+            <a href=$([string]$file) download=$([string]$file)>$([string]$file)</a>
         </li>"
         })
         </BODY></HTML>";
@@ -72,18 +72,21 @@ try{
             {
                 write-host $([string]$get_resource) is a valid resource. -BackgroundColor Yellow -ForegroundColor Red;
                 
-                #$(netsh http add urlacl url=http://+$($port)/$($get_resource) user=$($env:USERNAME))
-                
                 [System.Net.HttpListenerContext]$context1 = [System.Net.HttpListenerContext]$context;
                 [System.Net.HttpListenerRequest]$request1 = $context1.Request;
                 [System.Net.HttpListenerResponse]$response1 = $context1.Response;
                 
                 $full_path = $current_dir + '\' + $get_resource
+
                 $buffer1 = [System.Text.Encoding]::UTF8.GetBytes($([System.IO.StreamReader]::new($full_path).ReadToEnd()));
-                $response1.ContentLength64 = [System.Int64]$buffer1.Length
+
+                $response1.ContentLength64 = [System.Int64]$buffer1.Length;
                 [System.IO.Stream]$output1 = $response1.OutputStream;
+
                 $output1.Write($buffer1, 0, [System.Int64]$buffer1.Length);
                 $output1.Flush();
+                
+
             }
             else
             {
@@ -96,7 +99,7 @@ try{
             }
         }
     }
-    #$(netsh http delete urlacl url=http://+$($port)/$($get_resource) user=$($env:USERNAME))
+    
     $output.Close();
     $listener.Stop();
 }
